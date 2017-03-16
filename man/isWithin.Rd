@@ -15,7 +15,7 @@ isWithin(cell, region)
 TRUE if cell is within region
 }
 \description{
-Check if a cell/region is within another region
+Check if a cell/region is within another region.
 }
 \details{
 This function returns TRUE if the first arg refers to a cell or region within the region referred to by the

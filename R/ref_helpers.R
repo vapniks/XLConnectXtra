@@ -2,7 +2,7 @@
 
 
 ##' @title Check if a cell/region is within another region
-##' @description Check if a cell/region is within another region
+##' @description Check if a cell/region is within another region.
 ##' @details This function returns TRUE if the first arg refers to a cell or region within the region referred to by the
 ##' second arg. Each arg can be either a vector of numeric row & column indices, or an excel reference/region string.
 ##' @param cell The index or aref of a single cell/region
@@ -24,7 +24,16 @@ isWithin <- function(cell,region) {
     } else return(FALSE)
 }
 
-#### function that checks if two regions overlap, returns TRUE if they do
+##' @title Check if two regions overlap
+##' @description Check if two regions overlap.
+##' @details Each region argument can be either a numeric vector or matrix of row & column indices (as returned by aref2idx
+##' or getReferenceCoordinatesForName) or an excel reference string (as returned by idx2aref).
+##' Also the first argument (region1) may refer to a single cell instead of a region (i.e. it may be a vector of length 2).
+##' @param region1 A vector of row & column indices or an excel reference string for a single cell or a region.
+##' @param region2 A vector of row & column indices or an excel reference string for a region.
+##' @return TRUE if region1 overlaps region2
+##' @author Ben Veal
+##' @export 
 isOverlapping <- function(region1,region2) {
     ## convert args to numeric vectors
     if(is.character(region1)) region1 <- aref2idx(region1)
@@ -47,7 +56,27 @@ isOverlapping <- function(region1,region2) {
             isWithin(topright2,region1) || isWithin(bottomleft2,region1)
     }
 }
-#### function that returns the idx of cell adjacent to named region 
+
+##' @title Return indices of cell/region adjacent to another region
+##' @description Given a named region in an excel workbook this function can be used to calculate the cell indices
+##' for a region located adjacent to the named one.
+##' @details The return value will be either an excel reference string (as returned by XLConnect::aref), or a vector
+##' of row & column indices (as returned by aref2idx, i.e. first 2 elements are row & column indices of top-left corner
+##' and last 2 elements are row & column indices of bottom-right corner).
+##' By default a reference to a single cell will be returned, but if size is set to something bigger than 1x1 then a
+##' reference to a region will be returned. You can also add horizontal and vertical shifts to the region using the shift
+##' argument.
+##' @param wb A workbook object
+##' @param name The name of a named region in wb
+##' @param location A string indicating which side of the named region to place the new region.
+##' One of: "left","right","above"/"up","below"/"down" or just the first letter of one of those words.
+##' @param shift A pair of integers indicating how much rightward & downward shift to add to the new region (default is c(0,0)).
+##' @param size A pair of integers indicating the horizontal & vertical length of the new region (default is c(1,1)).
+##' @param errorOnOverlap Logical indicating whether or not to throw an error if the new region overlaps the named region.
+##' @param asAref Logical indicating whether to return the region as an excel reference string or a numeric vector.
+##' @return A numeric vector or excel reference string of row & column indices for the new region.
+##' @author Ben Veal
+##' @export 
 getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1,1),errorOnOverlap=TRUE,asAref=FALSE) {
     stopifnot(class(wb)=="workbook",
               is.character(name) && length(name)==1,
@@ -56,22 +85,22 @@ getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1
               is.numeric(size) && length(size)==2,
               size[1] > 0, size[2] > 0)
     refs <- getReferenceCoordinatesForName(wb,name)
-    if(location=="left") {
+    if(grep("^l",location,ignore.case=TRUE)) {
         rightidx <- refs[1,2] -1 + shift[2]
         leftidx <- rightidx - size[2] + 1
         topidx <- refs[1,1] + shift[1]
         bottomidx <- topidx + size[1] - 1
-    } else if(location=="right") {
+    } else if(grep("^r",location,ignore.case=TRUE)) {
         leftidx <- refs[2,2] + 1 + shift[2]
         rightidx <- leftidx + size[2] - 1
         topidx <- refs[1,1] + shift[1]
         bottomidx <- topidx + size[1] - 1
-    } else if(location=="above") {
+    } else if(grep("^(a|u)",location,ignore.case=TRUE)) {
         bottomidx <- refs[1,1] - 1 + shift[1]
         topidx <- bottomidx - size[1] + 1
         leftidx <- refs[1,2] + shift[2]
         rightidx <- leftidx + size[2] - 1
-    } else if(location=="below") {
+    } else if(grep("^(b|d)",location,ignore.case=TRUE)) {
         topidx <- refs[2,1] + 1 + shift[1]
         bottomidx <- topidx + size[1] - 1        
         leftidx <- refs[1,2] + shift[2]
@@ -86,7 +115,26 @@ getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1
     if(asAref) return(idx2aref(idxs)) else return(idxs)
 }
 
-### write data to worksheet
+##' @title Create function for writing to worksheet
+##' @description Create a function for writing named regions to a predefined worksheet.
+##' @details This function returns another convenience function for writing named regions to a given worksheet.
+##' The returned function takes a region name, cell references and a dataframe as its main arguments and writes
+##' the dataframe to the workbook & worksheet pair that were given as arguments to the parent function.
+##' If the worksheet does not yet exist it is created by the parent function. Similarly if the named region does
+##' not yet exist it is created by the child function.
+##' The child function also has named arguments 'header' (see 'writeNamedRegion') and 'absRow' & 'absCol' (see 'idx2cref').
+##' The default values for these arguments can be set using 'defaultHeader', 'defaultRow', and 'defaultCol' arguments of
+##' the parent function.
+##' @param wb An excel workbook object
+##' @param sheetname The name of a worksheet in the workbook object wb
+##' @param defaultRow Default logical value to use for absRow arg of returned function which indicates whether
+##' rows of cellrefs should be absolute references or not.
+##' @param defaultCol Default logical value to use for absCol arg of returned function which indicates whether
+##' columns of cellrefs should be absolute references or not.
+##' @param defaultHeader Default logical value of header arg of returned function which indicates whether column
+##' names of data should be written to the excel file.
+##' @author Ben Veal
+##' @export 
 makeRegionFunction <- function(wb,sheetname,defaultRow=TRUE,defaultCol=TRUE,defaultHeader=TRUE) {
     ## check args
     stopifnot(class(wb)=="workbook",
