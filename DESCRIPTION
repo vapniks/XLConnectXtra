@@ -1,0 +1,13 @@
+Package: XLConnectXtra
+Title: Convenience Functions For Working With Excel Files
+Version: 0.1.1
+Date: 2017-03-16
+Description: Convenience functions for working with excel files in R using XLConnect. These functions make it easier to define named regions and create equations of different sorts.
+Depends: R (>= 3.3.1), XLConnect
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Maintainer: 'Joe Bloggs' <vapniks@yahoo.com>
+Author: 'Joe Bloggs' <vapniks@yahoo.com>
+RoxygenNote: 6.0.1
+
