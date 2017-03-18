@@ -78,7 +78,9 @@ isOverlapping <- function(region1,region2) {
 ##' @param location A string indicating which side of the named region to place the new region.
 ##' One of: "left","right","above"/"up","below"/"down" or just the first letter of one of those words.
 ##' @param shift A pair of integers indicating how much rightward & downward shift to add to the new region (default is c(0,0)).
-##' @param size A pair of integers indicating the horizontal & vertical length of the new region (default is c(1,1)).
+##' Alternatively a pair of numbers between -1 & 1 indicating the amount to shift as a proportion of the named region size.
+##' @param size A pair of integers or fractions indicating the horizontal & vertical length of the new region (default is c(1,1)).
+##' Alternatively a pair of numbers between 0 & 1 indicating the size of the new region as a proportion of the named region size.
 ##' @param errorOnOverlap Logical indicating whether or not to throw an error if the new region overlaps the named region.
 ##' @param asAref Logical indicating whether to return the region as an excel reference string or a numeric vector.
 ##' @return A numeric vector or excel reference string of row & column indices for the new region.
@@ -90,24 +92,38 @@ getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1
               is.character(location) && length(location)==1,
               is.numeric(shift) && length(shift)==2,
               is.numeric(size) && length(size)==2,
-              size[1] > 0, size[2] > 0)
+              all(size >= 0))
     refs <- getReferenceCoordinatesForName(wb,name)
-    if(grep("^l",location,ignore.case=TRUE)) {
+    ## convert fractional values of shift and size args to integer values
+    for(i in 1:2) {
+        for(arg in c("shift","size")) {
+            vals <- get(arg)
+            if(vals[i] > 0 && vals[i] < 1) {
+                if(length(refs) > 2)
+                    vals[i] <- round(vals[i]*(refs[2,i]-refs[1,i]))
+                else
+                    vals[i] <- 1
+            }
+            assign(arg,vals)
+        }
+    }
+    ## calculate indices of new region depending on location
+    if(grepl("^l",location,ignore.case=TRUE)) {
         rightidx <- refs[1,2] -1 + shift[2]
         leftidx <- rightidx - size[2] + 1
         topidx <- refs[1,1] + shift[1]
         bottomidx <- topidx + size[1] - 1
-    } else if(grep("^r",location,ignore.case=TRUE)) {
+    } else if(grepl("^r",location,ignore.case=TRUE)) {
         leftidx <- refs[2,2] + 1 + shift[2]
         rightidx <- leftidx + size[2] - 1
         topidx <- refs[1,1] + shift[1]
         bottomidx <- topidx + size[1] - 1
-    } else if(grep("^(a|u)",location,ignore.case=TRUE)) {
+    } else if(grepl("^(a|u)",location,ignore.case=TRUE)) {
         bottomidx <- refs[1,1] - 1 + shift[1]
         topidx <- bottomidx - size[1] + 1
         leftidx <- refs[1,2] + shift[2]
         rightidx <- leftidx + size[2] - 1
-    } else if(grep("^(b|d)",location,ignore.case=TRUE)) {
+    } else if(grepl("^(b|d)",location,ignore.case=TRUE)) {
         topidx <- refs[2,1] + 1 + shift[1]
         bottomidx <- topidx + size[1] - 1        
         leftidx <- refs[1,2] + shift[2]
