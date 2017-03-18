@@ -98,7 +98,7 @@ getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1
     for(i in 1:2) {
         for(arg in c("shift","size")) {
             vals <- get(arg)
-            if(vals[i] > 0 && vals[i] < 1) {
+            if(abs(vals[i]) > 0 && abs(vals[i]) < 1) {
                 if(length(refs) > 2)
                     vals[i] <- round(vals[i]*(refs[2,i]-refs[1,i]))
                 else
@@ -131,7 +131,7 @@ getRefsAdjacentToName <- function(wb,name,location="right",shift=c(0,0),size=c(1
     } else stop("Invalid value for location arg:",location)
     if(topidx==bottomidx && leftidx==rightidx) idxs <- c(topidx,leftidx)
     else idxs <- c(topidx,leftidx,bottomidx,rightidx)
-    if(isOverlapping(idxs,refs))
+    if(errorOnOverlap && isOverlapping(idxs,refs))
         stop("New area overlaps adjacent area")
     if(leftidx < 1 || topidx < 1)
         stop("New area doesn't fit in worksheet")
