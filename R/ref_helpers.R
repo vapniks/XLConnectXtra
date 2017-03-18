@@ -12,6 +12,7 @@
     if(is.matrix(ref) && nrow(ref) > 1) ref <- c(ref[1,],ref[2,])
     ## check args
     stopifnot(is.numeric(ref) && (length(ref) %in% c(2,4)))
+    return(as.numeric(ref))
 }
 
 ##' @title Check if a cell/region is within another region
@@ -163,25 +164,6 @@ makeRegionFunction <- function(wb,sheetname,defaultRow=TRUE,defaultCol=TRUE,defa
     }
 }
 
-##' @title Create a relative reference from base and absolute references
-##' @description Given an absolute cell reference, create a reference that is relative to another base reference.
-##' @details The reference arguments can refer to single cells or areas. 
-##' The size of the returned reference area will correspond with the size of the absref argument, and if the absref argument
-##' is a single cell then the returned reference will also be a single cell.
-##' Reference arguments can be either numeric vectors or matrices of row & column indices (as returned by aref2idx
-##' or getReferenceCoordinatesForName) or a excel reference strings (as returned by idx2aref).
-##' @param baseref 
-##' @param absref 
-##' @return 
-##' @author Ben Veal
-##' @export 
-abs2relref <- function(baseref,absref) {
-    ## check args and convert to numeric vectors
-    baseref <- .ref2idx(baseref)
-    absref <- .ref2idx(absref)
-    
-}
-
 ##' @title Create an absolute reference from base and relative references
 ##' @description Given a cell reference that is relative to a given base reference, create a corresponding absolute cell reference.
 ##' @details The reference arguments can refer to single cells or areas. 
@@ -189,15 +171,40 @@ abs2relref <- function(baseref,absref) {
 ##' is a single cell then the returned reference will also be a single cell.
 ##' Reference arguments can be either numeric vectors or matrices of row & column indices (as returned by aref2idx
 ##' or getReferenceCoordinatesForName) or a excel reference strings (as returned by idx2aref).
-##' Negative indices in the relfref argument count backwards from the right/bottom side of the base reference cell/area.
-##' @param baseref 
-##' @param relref 
-##' @return 
+##' A relative reference of 1 corresponds to the first row/column.
+##' Negative indices in the relfref argument count backwards from the bottom/right side of the base reference cell/area,
+##' with 0 corresponding to the last row/column.
+##' @param baseref An absolute reference to an excel worksheet cell/area in either string form, matrix form or numeric vector form.
+##' @param relref A relative reference to an excel worksheet cell/area in either string form, matrix form or numeric vector form.
+##' @return A vector of 2 or 4 row & column indices for a single cell or an area, with entries 1 & 3 indicating the first & last
+##' rows, and entries 2 & 4 indicating the first and last columns.
 ##' @author Ben Veal
+##' @examples rel2absref("B2:E5","A1:B2")
+##' rel2absref("B2:E5",c(1,1,2,2))
+##' rel2absref("B2:E5",c(1,1,-2,-2))
+##' rel2absref("B2:E5",c(-3,-3,-2,-2))
 ##' @export 
 rel2absref <- function(baseref,relref) {
     ## check args and convert to numeric vectors
     baseref <- .ref2idx(baseref)
     relref <- .ref2idx(relref)
-    
+    absref <- integer(length(relref))
+    ## first row and column
+    for(i in c(1,2)) {
+        if(relref[i] > 0) absref[i] <- baseref[i] + relref[i] - 1
+        else if(length(baseref) > 2) absref[i] <- baseref[i+2] + relref[i]
+        else stop("invalid args")
+    }
+    ## last row and column
+    if(length(relref) > 2) {
+        for(i in c(3,4)) {
+            if(relref[i] > 0) absref[i] <- baseref[i-2] + relref[i] - 1
+            else if(length(baseref) > 2) absref[i] <- baseref[i] + relref[i]
+            else stop("invalid args")
+        }
+    }
+    ## check that final indices make sense and return them
+    if((length(absref) > 2 && (absref[1] > absref[3] || absref[2] > absref[4])) || any(absref < 1))
+        stop("Invalid area!")
+    return(absref)
 }
