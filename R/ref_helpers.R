@@ -1,5 +1,18 @@
 .packageName <- "XLConnectXtra"
 
+##' @title Convert reference in string or matrix form to vector form
+##' @description Convert reference in string or matrix form to vector form.
+##' @details Also check argument and results.
+##' @param ref 
+##' @return A numeric vector cell/area reference
+##' @author Ben Veal
+.ref2idx <- function(ref) {
+    ## convert args to numeric vectors
+    if(is.character(ref)) ref <- aref2idx(ref)
+    if(is.matrix(ref) && nrow(ref) > 1) ref <- c(ref[1,],ref[2,])
+    ## check args
+    stopifnot(is.numeric(ref) && (length(ref) %in% c(2,4)))
+}
 
 ##' @title Check if a cell/region is within another region
 ##' @description Check if a cell/region is within another region.
@@ -12,12 +25,10 @@
 ##' @import XLConnect
 ##' @export 
 isWithin <- function(cell,region) {
-    if(is.character(cell)) cell <- aref2idx(cell)    
-    if(is.character(region)) region <- aref2idx(region)
-    if(is.matrix(cell) && nrow(cell) > 1) cell <- c(cell[1,],cell[2,])
-    if(is.matrix(region) && nrow(region) > 1) region <- c(region[1,],region[2,])
-    stopifnot(is.numeric(cell) && length(cell) %in% c(2,4),
-              is.numeric(region) && length(region)==4)
+    ## check args and convert to numeric vectors    
+    cell <- .ref2idx(cell)
+    region <- .ref2idx(region)
+    stopifnot(is.numeric(region) && length(region)==4)
     if((cell[1] >= region[1]) && (cell[1] <= region[3]) && (cell[2] >= region[2]) && (cell[2] <= region[4])) {
         if(length(cell)==2) return(TRUE)
         else return((cell[3] >= region[1]) && (cell[3] <= region[3]) && (cell[4] >= region[2]) && (cell[4] <= region[4]))
@@ -35,14 +46,9 @@ isWithin <- function(cell,region) {
 ##' @author Ben Veal
 ##' @export 
 isOverlapping <- function(region1,region2) {
-    ## convert args to numeric vectors
-    if(is.character(region1)) region1 <- aref2idx(region1)
-    if(is.character(region2)) region2 <- aref2idx(region2)
-    if(is.matrix(region1) && nrow(region1) > 1) region1 <- c(region1[1,],region1[2,])
-    if(is.matrix(region2) && nrow(region2) > 1) region2 <- c(region2[1,],region2[2,])
-    ## check args
-    stopifnot(is.numeric(region1) && (length(region1) %in% c(2,4)),
-              is.numeric(region2) && (length(region2) %in% c(2,4)))
+    ## check args and convert to numeric vectors
+    region1 <- .ref2idx(region1)
+    region2 <- .ref2idx(region2)
     ## region1 & region2 could be single points or pairs of points, need to check all cases:
     if(length(region1)==2) {
         if(length(region2)==2) all(region1==region2)
@@ -155,4 +161,43 @@ makeRegionFunction <- function(wb,sheetname,defaultRow=TRUE,defaultCol=TRUE,defa
         createName(wb,name=name,formula=paste0(sheetname,"!",cellrefs))
         writeNamedRegion(wb,data=data,name=name,header=header)
     }
+}
+
+##' @title Create a relative reference from base and absolute references
+##' @description Given an absolute cell reference, create a reference that is relative to another base reference.
+##' @details The reference arguments can refer to single cells or areas. 
+##' The size of the returned reference area will correspond with the size of the absref argument, and if the absref argument
+##' is a single cell then the returned reference will also be a single cell.
+##' Reference arguments can be either numeric vectors or matrices of row & column indices (as returned by aref2idx
+##' or getReferenceCoordinatesForName) or a excel reference strings (as returned by idx2aref).
+##' @param baseref 
+##' @param absref 
+##' @return 
+##' @author Ben Veal
+##' @export 
+abs2relref <- function(baseref,absref) {
+    ## check args and convert to numeric vectors
+    baseref <- .ref2idx(baseref)
+    absref <- .ref2idx(absref)
+    
+}
+
+##' @title Create an absolute reference from base and relative references
+##' @description Given a cell reference that is relative to a given base reference, create a corresponding absolute cell reference.
+##' @details The reference arguments can refer to single cells or areas. 
+##' The size of the returned reference area will correspond with the size of the relref argument, and if the relref argument
+##' is a single cell then the returned reference will also be a single cell.
+##' Reference arguments can be either numeric vectors or matrices of row & column indices (as returned by aref2idx
+##' or getReferenceCoordinatesForName) or a excel reference strings (as returned by idx2aref).
+##' Negative indices in the relfref argument count backwards from the right/bottom side of the base reference cell/area.
+##' @param baseref 
+##' @param relref 
+##' @return 
+##' @author Ben Veal
+##' @export 
+rel2absref <- function(baseref,relref) {
+    ## check args and convert to numeric vectors
+    baseref <- .ref2idx(baseref)
+    relref <- .ref2idx(relref)
+    
 }
