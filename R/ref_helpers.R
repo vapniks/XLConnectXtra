@@ -72,7 +72,8 @@ isOverlapping <- function(region1,region2) {
 ##' and last 2 elements are row & column indices of bottom-right corner).
 ##' By default a reference to a single cell will be returned, but if size is set to something bigger than 1x1 then a
 ##' reference to a region will be returned. You can also add horizontal and vertical shifts to the region using the shift
-##' argument.
+##' argument. If values between 0 & 1 are used for the size argument then they will be multiplied by the height & width
+##' of the named region to get the size values, similarly for the shift argument (which can take values between -1 & 1).
 ##' @param wb A workbook object
 ##' @param name The name of a named region in wb
 ##' @param location A string indicating which side of the named region to place the new region.
