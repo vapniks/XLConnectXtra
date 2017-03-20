@@ -39,3 +39,8 @@ createLinCombFormula <- function(vars,coeffvals=NULL,coeffrefs=NULL) {
         linforms <- paste(linforms,paste0("(",varcols[i],varrows,"*",coeffs[i],")"),sep="+")
     return(linforms)
 }
+
+## TODO: Make generic function for creating excel formulas from model objects (e.g. lm, glm, polr, rpart)
+## Use S3 generic methods, see my R notes and maybe use library(GString) and library(R.oo). 
+## createExcelFormulas.lm <- function(lm) {
+## }
